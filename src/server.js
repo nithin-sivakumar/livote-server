@@ -66,20 +66,32 @@ io.on("connection", (client) => {
   });
 
   client.on("vote", async ({ selected, roomId }) => {
-    const exisitingRoom = await Room.findOne({ roomId }).populate("poll");
+    try {
+      // Find the room and populate the poll
+      const existingRoom = await Room.findOne({ roomId }).populate("poll");
 
-    let options = exisitingRoom.poll.options;
+      if (!existingRoom || !existingRoom.poll) {
+        client.emit("error", "Room or Poll not found");
+        return;
+      }
 
-    let updatedOptions = options.map((item) => {
-      return parseInt(item.value) == parseInt(selected)
-        ? { ...item, votes: item.votes + 1 }
-        : item;
-    });
+      // Update the votes in the poll options
+      existingRoom.poll.options = existingRoom.poll.options.map((option) => {
+        if (option.value === selected) {
+          option.votes += 1;
+        }
+        return option;
+      });
 
-    exisitingRoom.poll.options = updatedOptions;
-    await exisitingRoom.poll.save();
+      // Save the updated poll
+      await existingRoom.poll.save();
 
-    io.to(roomId).emit("notification", "Vote casted");
+      // Emit notification to the room
+      io.to(roomId).emit("notification", "Vote casted");
+    } catch (error) {
+      client.emit("error", "An error occurred while casting the vote");
+      console.error(error);
+    }
   });
 
   client.on("askQuestion", async ({ question, options, roomId, name }) => {
