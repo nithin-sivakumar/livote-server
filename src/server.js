@@ -66,32 +66,32 @@ io.on("connection", (client) => {
   });
 
   client.on("vote", async ({ selected, roomId }) => {
-    try {
-      // Find the room and populate the poll
-      const existingRoom = await Room.findOne({ roomId }).populate("poll");
+    // Find the room, and populate the poll details
+    const exisitingRoom = await Room.findOne({ roomId }).populate("poll");
 
-      if (!existingRoom || !existingRoom.poll) {
-        client.emit("error", "Room or Poll not found");
-        return;
-      }
-
-      // Update the votes in the poll options
-      existingRoom.poll.options = existingRoom.poll.options.map((option) => {
-        if (option.value === selected) {
-          option.votes += 1;
-        }
-        return option;
-      });
-
-      // Save the updated poll
-      await existingRoom.poll.save();
-
-      // Emit notification to the room
-      io.to(roomId).emit("notification", "Vote casted");
-    } catch (error) {
-      client.emit("error", "An error occurred while casting the vote");
-      console.error(error);
+    if (!exisitingRoom || !exisitingRoom.poll) {
+      client.emit("error", "Poll not found or is no longer active.");
+      return;
     }
+
+    // Find the selected option by its value
+    const selectedOption = exisitingRoom.poll.options.find(
+      (option) => option.value === selected
+    );
+
+    if (!selectedOption) {
+      client.emit("error", "Selected option not found.");
+      return;
+    }
+
+    // Increment the votes for the selected option directly in the Poll collection
+    await Poll.updateOne(
+      { _id: exisitingRoom.poll._id, "options._id": selectedOption._id },
+      { $inc: { "options.$.votes": 1 } }
+    );
+
+    // Emit the notification to the clients
+    io.to(roomId).emit("notification", "Vote casted");
   });
 
   client.on("askQuestion", async ({ question, options, roomId, name }) => {
