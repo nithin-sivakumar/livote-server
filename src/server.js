@@ -9,7 +9,12 @@ import { Poll } from "./models/poll.model.js";
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "https://livote-client.vercel.app",
+      "https://livote-server.vercel.app",
+    ],
+    methods: ["GET", "POST"],
   },
 });
 
