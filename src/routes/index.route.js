@@ -8,4 +8,8 @@ indexRouter.use("/api/rooms", roomRouter);
 
 indexRouter.use("/api/poll", pollRouter);
 
+indexRouter.get("/", (req, res) => {
+  res.send(`<h2>Oh! It's you, hi!</h2>`);
+});
+
 export default indexRouter;
