@@ -76,7 +76,7 @@ io.on("connection", (client) => {
 
     // Find the selected option by its value
     const selectedOption = exisitingRoom.poll.options.find(
-      (option) => option.value === selected
+      (option) => option.value == selected
     );
 
     if (!selectedOption) {
